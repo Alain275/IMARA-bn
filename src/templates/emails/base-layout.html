@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f4f4f4;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #ffffff;
+            font-size: 28px;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .header p {
+            color: #e0e7ff;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .content h2 {
+            color: #1a202c;
+            font-size: 22px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .content p {
+            color: #4a5568;
+            font-size: 15px;
+            margin-bottom: 15px;
+            line-height: 1.7;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 15px;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .info-box {
+            background-color: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #2d3748;
+            font-size: 16px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .info-box p {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .stat-card {
+            background-color: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .stat-card .label {
+            color: #718096;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            color: #1a202c;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .stat-card .unit {
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .alert-warning {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+        }
+        
+        .alert-success {
+            background-color: #d1fae5;
+            border-left: 4px solid #10b981;
+            color: #065f46;
+        }
+        
+        .alert-info {
+            background-color: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            color: #1e40af;
+        }
+        
+        .footer {
+            background-color: #2d3748;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .footer p {
+            color: #cbd5e0;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        
+        .footer a {
+            color: #90cdf4;
+            text-decoration: none;
+        }
+        
+        .footer .social-links {
+            margin-top: 20px;
+        }
+        
+        .footer .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #90cdf4;
+            font-size: 14px;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: #e2e8f0;
+            margin: 30px 0;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🌾 SmartFarmX</h1>
+            <p>Smart Agriculture for a Better Tomorrow</p>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            {{content}}
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>SmartFarmX</strong> - Empowering Farmers with Technology</p>
+            <p>Kigali, Rwanda | <a href="mailto:support@smartfarmx.com">support@smartfarmx.com</a></p>
+            <p style="font-size: 12px; color: #a0aec0; margin-top: 15px;">
+                You're receiving this email because you're a valued member of SmartFarmX.<br>
+                If you no longer wish to receive these emails, you can <a href="{{unsubscribeUrl}}" style="color: #90cdf4;">unsubscribe here</a>.
+            </p>
+            <div class="social-links">
+                <a href="#">Facebook</a> •
+                <a href="#">Twitter</a> •
+                <a href="#">Instagram</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

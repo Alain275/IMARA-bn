@@ -1,0 +1,60 @@
+<h2>🚨 Irrigation Alert: Action Required</h2>
+
+<p>Dear {{userName}},</p>
+
+<div class="alert alert-warning">
+    <strong>⚠️ Low Soil Moisture Detected</strong><br>
+    Your crops may be experiencing water stress. Immediate action recommended.
+</div>
+
+<p>Our sensors have detected that soil moisture levels in your farm have dropped below the optimal range.</p>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">Current Soil Moisture</div>
+        <div class="value" style="color: #dc2626;">{{currentMoisture}}<span class="unit">%</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Optimal Range</div>
+        <div class="value" style="color: #059669;">50-70<span class="unit">%</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Device</div>
+        <div class="value" style="font-size: 14px;">{{deviceId}}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Last Updated</div>
+        <div class="value" style="font-size: 14px;">{{timestamp}}</div>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<h3 style="color: #2d3748; font-size: 18px; margin-bottom: 15px;">🤖 AI Recommendations</h3>
+
+<div class="info-box">
+    <h3>Immediate Actions</h3>
+    <p><strong>1. Start Irrigation:</strong> Begin watering immediately to prevent crop stress. Aim to bring moisture levels to 60-70%.</p>
+    <p><strong>2. Duration:</strong> Based on current conditions, we recommend irrigating for approximately <strong>{{recommendedDuration}}</strong> minutes.</p>
+    <p><strong>3. Monitor:</strong> Check soil moisture levels every 2 hours during irrigation.</p>
+</div>
+
+<div class="info-box">
+    <h3>Long-term Recommendations</h3>
+    <p>• Consider installing drip irrigation for more efficient water use</p>
+    <p>• Add mulch around plants to retain soil moisture</p>
+    <p>• Schedule irrigation during early morning or evening to reduce evaporation</p>
+    <p>• Set up automated irrigation triggers based on soil moisture thresholds</p>
+</div>
+
+<p style="text-align: center; margin-top: 30px;">
+    <a href="{{controlUrl}}" class="button">Control Irrigation System</a>
+</p>
+
+<div class="alert alert-info" style="margin-top: 30px;">
+    <strong>💡 Smart Tip:</strong> You can enable automatic irrigation in your device settings. The system will automatically water your crops when moisture drops below your set threshold.
+</div>
+
+<p style="margin-top: 30px;">This alert was triggered at <strong>{{alertTime}}</strong>. If you've already taken action, you can ignore this message.</p>
+
+<p><strong>The SmartFarmX Team</strong></p>
