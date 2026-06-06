@@ -10,6 +10,7 @@ import { swaggerDocument } from './config/swagger';
 
 // Routes
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/user.routes';
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +46,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // 404 handler
 app.all('*', (req, res) => {
