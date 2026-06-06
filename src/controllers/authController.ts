@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import User, { UserRole } from '../models/User';
 import emailService from '../services/emailService';
 import { AppError } from '../utils/AppError';
