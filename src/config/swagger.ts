@@ -98,7 +98,7 @@ export const swaggerDocument = {
       post: {
         tags: ['Authentication'],
         summary: 'Register a new user',
-        description: 'Creates a new user account and sends an OTP to the provided email for verification.',
+        description: 'Creates a new user account and sends a verification link to the provided email.',
         security: [],
         requestBody: {
           required: true,
@@ -122,14 +122,14 @@ export const swaggerDocument = {
         },
         responses: {
           201: {
-            description: 'User registered successfully. OTP sent to email.',
+            description: 'User registered successfully. Verification link sent to email.',
             content: {
               'application/json': {
                 schema: {
                   type: 'object',
                   properties: {
                     success: { type: 'boolean', example: true },
-                    message: { type: 'string', example: 'Registration successful. Please verify your email with the OTP sent to your inbox.' },
+                    message: { type: 'string', example: 'Registration successful. Please check your email and click the verification link to activate your account.' },
                     data: {
                       type: 'object',
                       properties: {
@@ -138,6 +138,8 @@ export const swaggerDocument = {
                         name: { type: 'string' },
                         role: { type: 'string' },
                         isEmailVerified: { type: 'boolean', example: false },
+                        verificationToken: { type: 'string', description: 'Verification token (for testing)' },
+                        verifyURL: { type: 'string', description: 'Full verification URL (for testing)' },
                       },
                     },
                   },
@@ -149,59 +151,41 @@ export const swaggerDocument = {
         },
       },
     },
-    '/api/auth/verify-email': {
-      post: {
+    '/api/auth/verify-email/{token}': {
+      get: {
         tags: ['Authentication'],
-        summary: 'Verify email with OTP',
-        description: 'Verifies the user\'s email using the 6-digit OTP sent during registration. Returns JWT tokens on success.',
+        summary: 'Verify email via token link',
+        description: 'Verifies the user\'s email using the token from the verification link. Redirects to the frontend with JWT tokens on success.',
         security: [],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['email', 'otp'],
-                properties: {
-                  email: { type: 'string', format: 'email', example: 'john@example.com' },
-                  otp: { type: 'string', example: '482910' },
-                },
-              },
-            },
+        parameters: [
+          {
+            name: 'token',
+            in: 'path',
+            required: true,
+            description: 'Verification token from the email link',
+            schema: { type: 'string' },
           },
-        },
+        ],
         responses: {
-          200: {
-            description: 'Email verified. Returns access & refresh tokens.',
+          302: {
+            description: 'Email verified. Redirects to frontend with access & refresh tokens in query params.',
+          },
+          400: {
+            description: 'Invalid or expired verification link.',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    success: { type: 'boolean', example: true },
-                    message: { type: 'string', example: 'Email verified successfully' },
-                    data: {
-                      type: 'object',
-                      properties: {
-                        user: { $ref: '#/components/schemas/User' },
-                        token: { type: 'string' },
-                        refreshToken: { type: 'string' },
-                      },
-                    },
-                  },
-                },
+                schema: { $ref: '#/components/schemas/Error' },
               },
             },
           },
-          400: { $ref: '#/components/responses/NotFoundError' },
         },
       },
     },
-    '/api/auth/resend-otp': {
+    '/api/auth/resend-verification': {
       post: {
         tags: ['Authentication'],
-        summary: 'Resend OTP',
-        description: 'Resends the email verification OTP to the user\'s email address.',
+        summary: 'Resend verification email',
+        description: 'Resends the email verification link to the user\'s email address.',
         security: [],
         requestBody: {
           required: true,
@@ -219,20 +203,28 @@ export const swaggerDocument = {
         },
         responses: {
           200: {
-            description: 'OTP resent successfully.',
+            description: 'Verification email resent successfully.',
             content: {
               'application/json': {
                 schema: {
                   type: 'object',
                   properties: {
                     success: { type: 'boolean', example: true },
-                    message: { type: 'string', example: 'OTP resent successfully' },
+                    message: { type: 'string', example: 'Verification email resent successfully. Check your inbox.' },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        verificationToken: { type: 'string', description: 'Verification token (for testing)' },
+                        verifyURL: { type: 'string', description: 'Full verification URL (for testing)' },
+                      },
+                    },
                   },
                 },
               },
             },
           },
           400: { $ref: '#/components/responses/NotFoundError' },
+          404: { $ref: '#/components/responses/NotFoundError' },
         },
       },
     },

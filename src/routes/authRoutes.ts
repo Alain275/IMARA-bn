@@ -1,9 +1,8 @@
 import { Router } from 'express';
 import {
   register,
-  verifyEmail,
   verifyEmailByToken,
-  resendOTP,
+  resendVerification,
   login,
   getMe,
   forgotPassword,
@@ -16,9 +15,8 @@ const router = Router();
 
 // Public routes
 router.post('/register', register);
-router.get('/verify-email/:token', verifyEmailByToken); // Link-based verification
-router.post('/verify-email', verifyEmail);              // OTP-based (legacy)
-router.post('/resend-otp', resendOTP);
+router.get('/verify-email/:token', verifyEmailByToken);
+router.post('/resend-verification', resendVerification);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);

@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const useSSL = process.env.DB_SSL === 'true';
-
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'imara_db',
   process.env.DB_USER || 'postgres',
@@ -14,20 +12,18 @@ const sequelize = new Sequelize(
     port: parseInt(process.env.DB_PORT || '5432'),
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    dialectOptions: {
+      ssl: process.env.DB_SSL === 'true' ? {
+        require: true,
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true'
+      } : false
+    },
     pool: {
       max: 5,
       min: 0,
       acquire: 30000,
       idle: 10000
-    },
-    dialectOptions: useSSL
-      ? {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false // set to true in prod with a valid CA cert
-          }
-        }
-      : {}
+    }
   }
 );
 
@@ -35,10 +31,12 @@ export const connectDatabase = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully');
-
-    // Always sync to ensure tables exist
-    await sequelize.sync({ alter: true });
-    console.log('📊 Database models synchronized');
+    
+    // Sync models in development
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: true });
+      console.log('📊 Database models synchronized');
+    }
   } catch (error) {
     console.error('❌ Unable to connect to the database:', error);
     process.exit(1);

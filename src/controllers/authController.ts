@@ -173,85 +173,9 @@ export const verifyEmailByToken = catchAsync(async (req: Request, res: Response,
 });
 
 /**
- * @deprecated Use verifyEmailByToken (link-based) instead
+ * Resend verification email link
  */
-export const verifyEmail = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const { email, otp } = req.body;
-
-  // Find user
-  const user = await User.findOne({ where: { email } });
-  if (!user) {
-    return next(new AppError('User not found', 404));
-  }
-
-  // Check if already verified
-  if (user.isEmailVerified) {
-    return next(new AppError('Email already verified', 400));
-  }
-
-  // Verify OTP
-  if (!user.verifyOTP(otp)) {
-    return next(new AppError('Invalid or expired OTP', 400));
-  }
-
-  // Mark email as verified
-  user.isEmailVerified = true;
-  user.clearOTP();
-  await user.save();
-
-  // Send welcome email
-  try {
-    await emailService.sendWelcomeEmail(user);
-  } catch (error) {
-    console.error('Failed to send welcome email:', error);
-  }
-
-  // Generate tokens
-  const token = user.generateAuthToken();
-  const refreshToken = user.generateRefreshToken();
-
-  res.json({
-    success: true,
-    message: 'Email verified successfully',
-    data: {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        location: user.location,
-        farmSize: user.farmSize,
-        isEmailVerified: user.isEmailVerified,
-      },
-      token,
-      refreshToken,
-    },
-  });
-});
-
-/**
- * @swagger
- * /api/auth/resend-otp:
- *   post:
- *     tags: [Authentication]
- *     summary: Resend OTP for email verification
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
- *     responses:
- *       200:
- *         description: OTP resent successfully
- */
-export const resendOTP = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const resendVerification = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { email } = req.body;
 
   const user = await User.findOne({ where: { email } });
@@ -263,16 +187,28 @@ export const resendOTP = catchAsync(async (req: Request, res: Response, next: Ne
     return next(new AppError('Email already verified', 400));
   }
 
-  // Generate new OTP
-  const otp = user.generateOTP();
+  // Generate new verification token
+  const verificationToken = user.generateEmailVerificationToken();
   await user.save();
 
-  // Send OTP
-  await emailService.sendOTP(user, otp);
+  // Send verification link email
+  try {
+    await emailService.sendVerificationEmail(user, verificationToken);
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+    return next(new AppError('Failed to send verification email', 500));
+  }
+
+  const verifyURL = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/verify-email/${verificationToken}`;
 
   res.json({
     success: true,
-    message: 'OTP resent successfully',
+    message: 'Verification email resent successfully. Check your inbox.',
+    data: {
+      // Included for easy testing — remove in production
+      verificationToken,
+      verifyURL,
+    },
   });
 });
 
