@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { 
+import {
   getCurrentWeather,
   getHourlyForecast,
-  getWeeklyForecast,
-  getFarmingAlerts
+  getDailyForecast,
+  getFarmingAlerts,
+  getRainfallHistory
 } from '../controllers/weather.controller';
 import { authMiddleware } from '../middleware/auth';
 
@@ -13,7 +14,8 @@ router.use(authMiddleware);
 
 router.get('/current', getCurrentWeather);
 router.get('/hourly', getHourlyForecast);
-router.get('/weekly', getWeeklyForecast);
+router.get('/daily', getDailyForecast);
 router.get('/alerts', getFarmingAlerts);
+router.get('/rainfall', getRainfallHistory);
 
 export default router;

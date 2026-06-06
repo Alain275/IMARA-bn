@@ -22,7 +22,6 @@ export const swaggerDocument = {
   tags: [
     { name: 'Authentication', description: 'User authentication and authorization' },
     { name: 'Users', description: 'User management' },
-    { name: 'Farms', description: 'Farm management' },
     { name: 'Crops', description: 'Crop information and recommendations' },
     { name: 'Weather', description: 'Weather forecasts and alerts' },
     { name: 'Soil', description: 'Soil analysis and recommendations' },
@@ -54,6 +53,78 @@ export const swaggerDocument = {
           farmSize: { type: 'number' },
           isEmailVerified: { type: 'boolean' },
           isActive: { type: 'boolean' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      Crop: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          name: { type: 'string' },
+          scientificName: { type: 'string' },
+          category: { type: 'string' },
+          description: { type: 'string' },
+          growthPeriod: { type: 'integer' },
+          waterNeed: { type: 'string', enum: ['low', 'medium', 'high'] },
+          soilType: { type: 'string' },
+          optimalTemp: { type: 'string' },
+          season: { type: 'string' },
+        },
+      },
+      SoilTest: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          userId: { type: 'string', format: 'uuid' },
+          ph: { type: 'number' },
+          nitrogen: { type: 'number' },
+          phosphorus: { type: 'number' },
+          potassium: { type: 'number' },
+          organicMatter: { type: 'number' },
+          texture: { type: 'string' },
+          location: { type: 'string' },
+          testDate: { type: 'string', format: 'date-time' },
+        },
+      },
+      DiseaseDetection: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          userId: { type: 'string', format: 'uuid' },
+          cropId: { type: 'string', format: 'uuid' },
+          diseaseName: { type: 'string' },
+          confidence: { type: 'number' },
+          severity: { type: 'string', enum: ['low', 'medium', 'high'] },
+          imageUrl: { type: 'string' },
+          symptoms: { type: 'string' },
+          treatment: { type: 'string' },
+          prevention: { type: 'string' },
+          detectedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      MarketPrice: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          cropId: { type: 'string', format: 'uuid' },
+          market: { type: 'string' },
+          location: { type: 'string' },
+          price: { type: 'number' },
+          unit: { type: 'string' },
+          currency: { type: 'string' },
+          priceDate: { type: 'string', format: 'date-time' },
+        },
+      },
+      Notification: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          userId: { type: 'string', format: 'uuid' },
+          type: { type: 'string', enum: ['weather', 'market', 'disease', 'soil', 'training', 'system'] },
+          title: { type: 'string' },
+          message: { type: 'string' },
+          isRead: { type: 'boolean' },
+          priority: { type: 'string', enum: ['low', 'medium', 'high'] },
           createdAt: { type: 'string', format: 'date-time' },
         },
       },
@@ -950,6 +1021,541 @@ export const swaggerDocument = {
           404: { $ref: '#/components/responses/NotFoundError' },
         },
       },
+    },
+    // Crops APIs
+    '/api/crops/catalog': {
+      get: {
+        tags: ['Crops'],
+        summary: 'Get all crops catalog',
+        description: 'Returns a paginated list of all available crops with filters.',
+        parameters: [
+          { name: 'category', in: 'query', schema: { type: 'string' }, description: 'Filter by category' },
+          { name: 'waterNeed', in: 'query', schema: { type: 'string', enum: ['low', 'medium', 'high'] } },
+          { name: 'season', in: 'query', schema: { type: 'string' } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: {
+          200: {
+            description: 'Crops retrieved successfully',
+            content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, data: { type: 'object' } } } } }
+          }
+        }
+      }
+    },
+    '/api/crops/recommendations': {
+      get: {
+        tags: ['Crops'],
+        summary: 'Get crop recommendations',
+        description: 'Get AI-powered crop recommendations based on location and conditions.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'location', in: 'query', schema: { type: 'string' } },
+          { name: 'soilType', in: 'query', schema: { type: 'string' } },
+          { name: 'season', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: { 200: { description: 'Recommendations retrieved' } }
+      }
+    },
+    '/api/crops/my-crops': {
+      get: {
+        tags: ['Crops'],
+        summary: 'Get farmer crops',
+        description: 'Returns the authenticated farmer\'s crops.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['planned', 'planted', 'growing', 'harvested', 'failed'] } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Crops retrieved successfully' } }
+      },
+      post: {
+        tags: ['Crops'],
+        summary: 'Add crop to farm',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['cropId', 'plantingDate', 'areaPlanted'],
+                properties: {
+                  cropId: { type: 'string', format: 'uuid' },
+                  farmId: { type: 'string', format: 'uuid' },
+                  plantingDate: { type: 'string', format: 'date' },
+                  areaPlanted: { type: 'number' },
+                  expectedHarvestDate: { type: 'string', format: 'date' },
+                  notes: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: 'Crop added successfully' } }
+      }
+    },
+    '/api/crops/my-crops/{id}': {
+      patch: {
+        tags: ['Crops'],
+        summary: 'Update farmer crop',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  status: { type: 'string', enum: ['planned', 'planted', 'growing', 'harvested', 'failed'] },
+                  actualHarvestDate: { type: 'string', format: 'date' },
+                  yield: { type: 'number' },
+                  notes: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Crop updated successfully' } }
+      },
+      delete: {
+        tags: ['Crops'],
+        summary: 'Delete farmer crop',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Crop deleted successfully' } }
+      }
+    },
+    // Weather APIs
+    '/api/weather/current': {
+      get: {
+        tags: ['Weather'],
+        summary: 'Get current weather',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'location', in: 'query', schema: { type: 'string', default: 'Kigali' } },
+          { name: 'lat', in: 'query', schema: { type: 'number' } },
+          { name: 'lon', in: 'query', schema: { type: 'number' } },
+        ],
+        responses: { 200: { description: 'Current weather retrieved' } }
+      }
+    },
+    '/api/weather/hourly': {
+      get: {
+        tags: ['Weather'],
+        summary: 'Get hourly forecast',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'location', in: 'query', schema: { type: 'string' } },
+          { name: 'hours', in: 'query', schema: { type: 'integer', default: 12 } },
+        ],
+        responses: { 200: { description: 'Hourly forecast retrieved' } }
+      }
+    },
+    '/api/weather/daily': {
+      get: {
+        tags: ['Weather'],
+        summary: 'Get daily forecast',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'location', in: 'query', schema: { type: 'string' } },
+          { name: 'days', in: 'query', schema: { type: 'integer', default: 7 } },
+        ],
+        responses: { 200: { description: 'Daily forecast retrieved' } }
+      }
+    },
+    '/api/weather/alerts': {
+      get: {
+        tags: ['Weather'],
+        summary: 'Get farming alerts',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'location', in: 'query', schema: { type: 'string' } }],
+        responses: { 200: { description: 'Weather alerts retrieved' } }
+      }
+    },
+    '/api/weather/rainfall': {
+      get: {
+        tags: ['Weather'],
+        summary: 'Get rainfall history',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'location', in: 'query', schema: { type: 'string' } },
+          { name: 'months', in: 'query', schema: { type: 'integer', default: 12 } },
+        ],
+        responses: { 200: { description: 'Rainfall history retrieved' } }
+      }
+    },
+    // Soil APIs
+    '/api/soil': {
+      get: {
+        tags: ['Soil'],
+        summary: 'Get soil tests',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'location', in: 'query', schema: { type: 'string' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Soil tests retrieved' } }
+      },
+      post: {
+        tags: ['Soil'],
+        summary: 'Create soil test',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['ph', 'nitrogen', 'phosphorus', 'potassium'],
+                properties: {
+                  ph: { type: 'number' },
+                  nitrogen: { type: 'number' },
+                  phosphorus: { type: 'number' },
+                  potassium: { type: 'number' },
+                  organicMatter: { type: 'number' },
+                  texture: { type: 'string' },
+                  location: { type: 'string' },
+                  notes: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: 'Soil test created' } }
+      }
+    },
+    '/api/soil/latest': {
+      get: {
+        tags: ['Soil'],
+        summary: 'Get latest soil test',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'Latest soil test retrieved' } }
+      }
+    },
+    '/api/soil/analysis': {
+      get: {
+        tags: ['Soil'],
+        summary: 'Get soil analysis',
+        description: 'Get comprehensive soil analysis with health score and recommendations.',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'Soil analysis retrieved' } }
+      }
+    },
+    '/api/soil/{id}': {
+      get: {
+        tags: ['Soil'],
+        summary: 'Get soil test by ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Soil test retrieved' } }
+      },
+      patch: {
+        tags: ['Soil'],
+        summary: 'Update soil test',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  ph: { type: 'number' },
+                  nitrogen: { type: 'number' },
+                  phosphorus: { type: 'number' },
+                  potassium: { type: 'number' },
+                  organicMatter: { type: 'number' },
+                  texture: { type: 'string' },
+                  location: { type: 'string' },
+                  notes: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Soil test updated' } }
+      },
+      delete: {
+        tags: ['Soil'],
+        summary: 'Delete soil test',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Soil test deleted' } }
+      }
+    },
+    // Disease APIs
+    '/api/disease': {
+      get: {
+        tags: ['Disease'],
+        summary: 'Get disease detections',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'severity', in: 'query', schema: { type: 'string', enum: ['low', 'medium', 'high'] } },
+          { name: 'cropId', in: 'query', schema: { type: 'string', format: 'uuid' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Disease detections retrieved' } }
+      },
+      post: {
+        tags: ['Disease'],
+        summary: 'Create disease detection',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['diseaseName', 'severity'],
+                properties: {
+                  cropId: { type: 'string', format: 'uuid' },
+                  diseaseName: { type: 'string' },
+                  confidence: { type: 'number' },
+                  severity: { type: 'string', enum: ['low', 'medium', 'high'] },
+                  imageUrl: { type: 'string' },
+                  symptoms: { type: 'string' },
+                  treatment: { type: 'string' },
+                  prevention: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: 'Disease detection created' } }
+      }
+    },
+    '/api/disease/stats': {
+      get: {
+        tags: ['Disease'],
+        summary: 'Get disease statistics',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'Disease stats retrieved' } }
+      }
+    },
+    '/api/disease/detect': {
+      post: {
+        tags: ['Disease'],
+        summary: 'Detect disease from image (AI)',
+        description: 'AI-powered disease detection from image (placeholder).',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['imageUrl'],
+                properties: {
+                  imageUrl: { type: 'string' },
+                  cropId: { type: 'string', format: 'uuid' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Disease detected' } }
+      }
+    },
+    '/api/disease/{id}': {
+      get: {
+        tags: ['Disease'],
+        summary: 'Get disease detection by ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Disease detection retrieved' } }
+      },
+      patch: {
+        tags: ['Disease'],
+        summary: 'Update disease detection',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  severity: { type: 'string', enum: ['low', 'medium', 'high'] },
+                  symptoms: { type: 'string' },
+                  treatment: { type: 'string' },
+                  prevention: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Disease detection updated' } }
+      },
+      delete: {
+        tags: ['Disease'],
+        summary: 'Delete disease detection',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Disease detection deleted' } }
+      }
+    },
+    // Market APIs
+    '/api/market/prices': {
+      get: {
+        tags: ['Market'],
+        summary: 'Get market prices',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'cropId', in: 'query', schema: { type: 'string', format: 'uuid' } },
+          { name: 'location', in: 'query', schema: { type: 'string' } },
+          { name: 'market', in: 'query', schema: { type: 'string' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+        ],
+        responses: { 200: { description: 'Market prices retrieved' } }
+      },
+      post: {
+        tags: ['Market'],
+        summary: 'Add market price (Admin)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['cropId', 'market', 'location', 'price', 'unit'],
+                properties: {
+                  cropId: { type: 'string', format: 'uuid' },
+                  market: { type: 'string' },
+                  location: { type: 'string' },
+                  price: { type: 'number' },
+                  unit: { type: 'string' },
+                  volume: { type: 'number' },
+                  quality: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: 'Market price added' } }
+      }
+    },
+    '/api/market/trends': {
+      get: {
+        tags: ['Market'],
+        summary: 'Get price trends',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'cropId', in: 'query', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'location', in: 'query', schema: { type: 'string' } },
+          { name: 'days', in: 'query', schema: { type: 'integer', default: 30 } },
+        ],
+        responses: { 200: { description: 'Price trends retrieved' } }
+      }
+    },
+    '/api/market/summary': {
+      get: {
+        tags: ['Market'],
+        summary: 'Get market summary',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'location', in: 'query', schema: { type: 'string' } }],
+        responses: { 200: { description: 'Market summary retrieved' } }
+      }
+    },
+    '/api/market/alerts': {
+      get: {
+        tags: ['Market'],
+        summary: 'Get price alerts',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'Price alerts retrieved' } }
+      }
+    },
+    '/api/market/prices/{id}': {
+      get: {
+        tags: ['Market'],
+        summary: 'Get price by ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Price retrieved' } }
+      },
+      patch: {
+        tags: ['Market'],
+        summary: 'Update market price',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  price: { type: 'number' },
+                  volume: { type: 'number' },
+                  quality: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Price updated' } }
+      },
+      delete: {
+        tags: ['Market'],
+        summary: 'Delete market price',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Price deleted' } }
+      }
+    },
+    // Notifications APIs
+    '/api/notifications': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Get notifications',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'type', in: 'query', schema: { type: 'string', enum: ['weather', 'market', 'disease', 'soil', 'training', 'system'] } },
+          { name: 'isRead', in: 'query', schema: { type: 'boolean' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+        ],
+        responses: { 200: { description: 'Notifications retrieved' } }
+      }
+    },
+    '/api/notifications/unread-count': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Get unread count',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'Unread count retrieved' } }
+      }
+    },
+    '/api/notifications/{id}/read': {
+      patch: {
+        tags: ['Notifications'],
+        summary: 'Mark notification as read',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Notification marked as read' } }
+      }
+    },
+    '/api/notifications/mark-all-read': {
+      patch: {
+        tags: ['Notifications'],
+        summary: 'Mark all as read',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'All notifications marked as read' } }
+      }
+    },
+    '/api/notifications/{id}': {
+      delete: {
+        tags: ['Notifications'],
+        summary: 'Delete notification',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Notification deleted' } }
+      }
     },
   },
 };

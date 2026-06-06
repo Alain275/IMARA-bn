@@ -3,14 +3,22 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import http from 'http';
 import swaggerUi from 'swagger-ui-express';
 import { errorHandler } from './middleware/errorHandler';
 import { connectDatabase } from './config/database';
 import { swaggerDocument } from './config/swagger';
+import { initializeWebSocket } from './services/websocket';
 
 // Routes
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/user.routes';
+import cropRoutes from './routes/crop.routes';
+import weatherRoutes from './routes/weather.routes';
+import soilRoutes from './routes/soil.routes';
+import diseaseRoutes from './routes/disease.routes';
+import marketRoutes from './routes/market.routes';
+import notificationRoutes from './routes/notification.routes';
 
 // Load environment variables
 dotenv.config();
@@ -47,6 +55,12 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/crops', cropRoutes);
+app.use('/api/weather', weatherRoutes);
+app.use('/api/soil', soilRoutes);
+app.use('/api/disease', diseaseRoutes);
+app.use('/api/market', marketRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404 handler
 app.all('*', (req, res) => {
@@ -65,11 +79,18 @@ const startServer = async () => {
     // Connect to database
     await connectDatabase();
     
-    app.listen(PORT, () => {
+    // Create HTTP server
+    const httpServer = http.createServer(app);
+    
+    // Initialize WebSocket
+    initializeWebSocket(httpServer);
+    
+    httpServer.listen(PORT, () => {
       console.log(`🚀 IMARA Backend Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API available at http://localhost:${PORT}/api`);
       console.log(`📚 API Documentation at http://localhost:${PORT}/api-docs`);
+      console.log(`🔌 WebSocket server running`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
