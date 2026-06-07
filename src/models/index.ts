@@ -8,8 +8,23 @@ import Farm from './Farm';
 import FarmerCrop from './FarmerCrop';
 import MarketPrice from './MarketPrice';
 import Notification from './Notification';
+import AgronomistProfile from './AgronomistProfile';
+import FarmVisit from './FarmVisit';
+import Advice from './Advice';
+import Question from './Question';
+import TrainingMaterial from './TrainingMaterial';
 
 // Define relationships
+
+// User has one AgronomistProfile
+User.hasOne(AgronomistProfile, {
+  foreignKey: 'userId',
+  as: 'agronomistProfile',
+});
+AgronomistProfile.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user',
+});
 
 // User has many Farms
 User.hasMany(Farm, {
@@ -49,6 +64,91 @@ Farm.hasMany(FarmerCrop, {
 FarmerCrop.belongsTo(Farm, {
   foreignKey: 'farmId',
   as: 'farm',
+});
+
+// FarmVisit relationships
+User.hasMany(FarmVisit, {
+  foreignKey: 'agronomistId',
+  as: 'farmVisitsAsAgronomist',
+});
+FarmVisit.belongsTo(User, {
+  foreignKey: 'agronomistId',
+  as: 'agronomist',
+});
+
+User.hasMany(FarmVisit, {
+  foreignKey: 'farmerId',
+  as: 'farmVisitsAsFarmer',
+});
+FarmVisit.belongsTo(User, {
+  foreignKey: 'farmerId',
+  as: 'farmer',
+});
+
+Farm.hasMany(FarmVisit, {
+  foreignKey: 'farmId',
+  as: 'visits',
+});
+FarmVisit.belongsTo(Farm, {
+  foreignKey: 'farmId',
+  as: 'farm',
+});
+
+// Advice relationships
+User.hasMany(Advice, {
+  foreignKey: 'agronomistId',
+  as: 'adviceAsAgronomist',
+});
+Advice.belongsTo(User, {
+  foreignKey: 'agronomistId',
+  as: 'agronomist',
+});
+
+User.hasMany(Advice, {
+  foreignKey: 'farmerId',
+  as: 'adviceAsFarmer',
+});
+Advice.belongsTo(User, {
+  foreignKey: 'farmerId',
+  as: 'farmer',
+});
+
+Farm.hasMany(Advice, {
+  foreignKey: 'farmId',
+  as: 'advice',
+});
+Advice.belongsTo(Farm, {
+  foreignKey: 'farmId',
+  as: 'farm',
+});
+
+// Question relationships
+User.hasMany(Question, {
+  foreignKey: 'farmerId',
+  as: 'questionsAsFarmer',
+});
+Question.belongsTo(User, {
+  foreignKey: 'farmerId',
+  as: 'farmer',
+});
+
+User.hasMany(Question, {
+  foreignKey: 'answeredBy',
+  as: 'questionsAnswered',
+});
+Question.belongsTo(User, {
+  foreignKey: 'answeredBy',
+  as: 'agronomist',
+});
+
+// TrainingMaterial relationships
+User.hasMany(TrainingMaterial, {
+  foreignKey: 'createdBy',
+  as: 'trainingMaterials',
+});
+TrainingMaterial.belongsTo(User, {
+  foreignKey: 'createdBy',
+  as: 'creator',
 });
 
 // User has many SoilTests
@@ -145,6 +245,11 @@ export {
   DiseaseDetection,
   MarketPrice,
   Notification,
+  AgronomistProfile,
+  FarmVisit,
+  Advice,
+  Question,
+  TrainingMaterial,
   Course,
   Enrollment,
 };

@@ -44,6 +44,11 @@ export const connectDatabase = async () => {
         DiseaseDetection, 
         MarketPrice, 
         Notification,
+        AgronomistProfile,
+        FarmVisit,
+        Advice,
+        Question,
+        TrainingMaterial,
         Course,
         Enrollment
       } = require('../models');
@@ -55,11 +60,16 @@ export const connectDatabase = async () => {
       await Course.sync({ alter: true });
       
       // Then tables with foreign keys
+      await AgronomistProfile.sync({ alter: true });
       await FarmerCrop.sync({ alter: true });
       await SoilTest.sync({ alter: true });
       await DiseaseDetection.sync({ alter: true });
       await MarketPrice.sync({ alter: true });
       await Notification.sync({ alter: true });
+      await FarmVisit.sync({ alter: true });
+      await Advice.sync({ alter: true });
+      await Question.sync({ alter: true });
+      await TrainingMaterial.sync({ alter: true });
       await Enrollment.sync({ alter: true });
       
       console.log('📊 Database models synchronized');
