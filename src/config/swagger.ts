@@ -17,7 +17,7 @@ export const swaggerDocument = {
     {
       url: 'https://imara-bn.onrender.com',
       description: 'Production server',
-    },
+    }, 
   ],
   tags: [
     { name: 'Authentication', description: 'User authentication and authorization' },
