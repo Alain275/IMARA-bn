@@ -2,8 +2,10 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import DiseaseDetection from '../models/DiseaseDetection';
 import Crop from '../models/Crop';
+import User from '../models/User';
 import sequelize from '../config/database';
 import { Op } from 'sequelize';
+import { detectDiseaseWithAI } from '../services/aiService';
 
 // Get user's disease detections
 export const getDiseaseDetections = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -201,10 +203,9 @@ export const getDiseaseStats = async (req: AuthRequest, res: Response, next: Nex
   }
 };
 
-// Detect disease from image (placeholder for AI model)
+// Detect disease from image (AI-powered)
 export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // This is a placeholder - actual AI model integration will be added later
     const { imageUrl, cropId } = req.body;
 
     if (!imageUrl) {
@@ -214,20 +215,103 @@ export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, ne
       });
     }
 
-    // Placeholder response
-    const detection = {
-      diseaseName: 'Late Blight',
-      confidence: 87.5,
-      severity: 'high',
-      symptoms: 'Dark brown spots on leaves, white mold on undersides',
-      treatment: 'Apply copper-based fungicide immediately. Remove affected plants.',
-      prevention: 'Ensure proper spacing, avoid overhead watering, use resistant varieties',
-      detectedAt: new Date()
-    };
+    try {
+      // Call AI service for detection
+      const aiResult = await detectDiseaseWithAI(imageUrl);
+
+      // Determine severity based on confidence
+      let severity: 'low' | 'medium' | 'high' = 'medium';
+      if (aiResult.prediction.confidence >= 80) {
+        severity = 'high';
+      } else if (aiResult.prediction.confidence < 60) {
+        severity = 'low';
+      }
+
+      // Save detection to database with pending review status
+      const detection = await DiseaseDetection.create({
+        userId: req.user!.id,
+        cropId,
+        diseaseName: aiResult.prediction.disease,
+        confidence: aiResult.prediction.confidence,
+        severity,
+        imageUrl,
+        symptoms: aiResult.details.symptoms,
+        treatment: aiResult.details.treatment,
+        prevention: aiResult.details.prevention,
+        aiPrediction: aiResult.prediction.disease,
+        aiConfidence: aiResult.prediction.confidence,
+        verificationStatus: 'pending_review',
+        detectedAt: new Date()
+      });
+
+      res.json({
+        success: true,
+        message: '⚠️ AI Detection Complete - Awaiting Agronomist Verification',
+        data: {
+          detection,
+          aiResult: {
+            ...aiResult,
+            warning: 'This is an AI prediction. Please wait for agronomist verification before taking action.'
+          }
+        }
+      });
+    } catch (aiError: any) {
+      console.error('AI Service Error:', aiError);
+      
+      // Fallback: Save as unverified detection
+      const detection = await DiseaseDetection.create({
+        userId: req.user!.id,
+        cropId,
+        diseaseName: 'Unknown - AI Service Unavailable',
+        confidence: 0,
+        severity: 'medium',
+        imageUrl,
+        verificationStatus: 'pending_review',
+        detectedAt: new Date()
+      });
+
+      res.json({
+        success: true,
+        message: 'Image uploaded. AI service unavailable - Agronomist review required.',
+        data: { detection },
+        warning: 'AI detection failed. An agronomist will review your submission.'
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Agronomist verifies/corrects AI detection
+export const verifyDiseaseDetection = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { diseaseName, severity, treatment, prevention, verificationNotes, isCorrect } = req.body;
+
+    const detection = await DiseaseDetection.findByPk(id);
+
+    if (!detection) {
+      return res.status(404).json({ success: false, message: 'Disease detection not found' });
+    }
+
+    // Update with agronomist verification
+    detection.verifiedBy = req.user!.id;
+    detection.verificationStatus = isCorrect ? 'verified' : 'corrected';
+    detection.verificationNotes = verificationNotes;
+
+    if (!isCorrect) {
+      // Agronomist corrected the AI prediction
+      if (diseaseName) detection.diseaseName = diseaseName;
+      if (severity) detection.severity = severity;
+      if (treatment) detection.treatment = treatment;
+      if (prevention) detection.prevention = prevention;
+    }
+
+    await detection.save();
 
     res.json({
       success: true,
-      message: 'AI analysis complete (placeholder)',
+      message: isCorrect ? 'AI prediction verified' : 'Detection corrected by agronomist',
       data: detection
     });
   } catch (error) {

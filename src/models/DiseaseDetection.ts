@@ -13,6 +13,11 @@ interface DiseaseDetectionAttributes {
   treatment?: string;
   prevention?: string;
   detectedAt: Date;
+  aiPrediction?: string;
+  aiConfidence?: number;
+  verifiedBy?: string;
+  verificationStatus: 'pending_review' | 'verified' | 'corrected';
+  verificationNotes?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -31,6 +36,11 @@ class DiseaseDetection extends Model<DiseaseDetectionAttributes, DiseaseDetectio
   public treatment?: string;
   public prevention?: string;
   public detectedAt!: Date;
+  public aiPrediction?: string;
+  public aiConfidence?: number;
+  public verifiedBy?: string;
+  public verificationStatus!: 'pending_review' | 'verified' | 'corrected';
+  public verificationNotes?: string;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -96,6 +106,39 @@ DiseaseDetection.init(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       allowNull: false,
+    },
+    aiPrediction: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Original AI model prediction',
+    },
+    aiConfidence: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      validate: {
+        min: 0,
+        max: 100,
+      },
+      comment: 'AI prediction confidence (0-100%)',
+    },
+    verifiedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id',
+      },
+      comment: 'Agronomist who verified the detection',
+    },
+    verificationStatus: {
+      type: DataTypes.ENUM('pending_review', 'verified', 'corrected'),
+      defaultValue: 'pending_review',
+      allowNull: false,
+    },
+    verificationNotes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Agronomist notes on verification',
     },
   },
   {

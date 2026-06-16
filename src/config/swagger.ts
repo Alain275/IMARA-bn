@@ -15,7 +15,7 @@ export const swaggerDocument = {
       description: 'Development server',
     },
     {
-      url: 'https://api.imara.rw',
+      url: 'https://imara-bn.onrender.com',
       description: 'Production server',
     },
   ],
@@ -28,6 +28,8 @@ export const swaggerDocument = {
     { name: 'Disease', description: 'Disease detection and management' },
     { name: 'Market', description: 'Market prices and trends' },
     { name: 'Notifications', description: 'User notifications' },
+    { name: 'Agronomists', description: 'Agronomist services and management' },
+    { name: 'Questions', description: 'Farmer questions and answers' },
   ],
   components: {
     securitySchemes: {
@@ -1555,6 +1557,374 @@ export const swaggerDocument = {
         security: [{ bearerAuth: [] }],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
         responses: { 200: { description: 'Notification deleted' } }
+      }
+    },
+    // Agronomist APIs
+    '/api/agronomists/profile': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get agronomist profile',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'Profile retrieved' } }
+      },
+      patch: {
+        tags: ['Agronomists'],
+        summary: 'Update agronomist profile',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  district: { type: 'string', example: 'Gasabo' },
+                  sector: { type: 'string', example: 'Remera' },
+                  specialization: { type: 'string', example: 'Crop Management' },
+                  yearsOfExperience: { type: 'integer', example: 5 },
+                  bio: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Profile updated' } }
+      }
+    },
+    '/api/agronomists/farmers': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get assigned farmers',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'district', in: 'query', schema: { type: 'string' } },
+          { name: 'sector', in: 'query', schema: { type: 'string' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Farmers list retrieved' } }
+      }
+    },
+    '/api/agronomists/farmers/{farmerId}': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get farmer details',
+        description: 'Get detailed farmer information including farms and crops.',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'farmerId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Farmer details retrieved' } }
+      }
+    },
+    '/api/agronomists/farm-visits': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get farm visits',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['scheduled', 'completed', 'cancelled'] } },
+          { name: 'farmerId', in: 'query', schema: { type: 'string', format: 'uuid' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Farm visits retrieved' } }
+      },
+      post: {
+        tags: ['Agronomists'],
+        summary: 'Create farm visit',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['farmerId', 'visitDate', 'observations', 'recommendations'],
+                properties: {
+                  farmerId: { type: 'string', format: 'uuid' },
+                  farmId: { type: 'string', format: 'uuid' },
+                  visitDate: { type: 'string', format: 'date-time' },
+                  observations: { type: 'string' },
+                  recommendations: { type: 'string' },
+                  nextVisitDate: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: 'Farm visit created' } }
+      }
+    },
+    '/api/agronomists/farm-visits/{id}': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get farm visit by ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Farm visit retrieved' } }
+      },
+      patch: {
+        tags: ['Agronomists'],
+        summary: 'Update farm visit',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  visitDate: { type: 'string', format: 'date-time' },
+                  observations: { type: 'string' },
+                  recommendations: { type: 'string' },
+                  nextVisitDate: { type: 'string', format: 'date-time' },
+                  status: { type: 'string', enum: ['scheduled', 'completed', 'cancelled'] }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Farm visit updated' } }
+      }
+    },
+    '/api/agronomists/advice': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get advice list',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['pending', 'in_progress', 'resolved', 'closed'] } },
+          { name: 'farmerId', in: 'query', schema: { type: 'string', format: 'uuid' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Advice list retrieved' } }
+      },
+      post: {
+        tags: ['Agronomists'],
+        summary: 'Create advice',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['farmerId', 'title', 'problem', 'recommendation'],
+                properties: {
+                  farmerId: { type: 'string', format: 'uuid' },
+                  farmId: { type: 'string', format: 'uuid' },
+                  title: { type: 'string', example: 'Pest Control Issue' },
+                  problem: { type: 'string', example: 'Aphids on tomato plants' },
+                  recommendation: { type: 'string', example: 'Apply neem oil spray twice daily' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: 'Advice created' } }
+      }
+    },
+    '/api/agronomists/advice/{id}': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get advice by ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Advice retrieved' } }
+      },
+      patch: {
+        tags: ['Agronomists'],
+        summary: 'Update advice',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  problem: { type: 'string' },
+                  recommendation: { type: 'string' },
+                  status: { type: 'string', enum: ['pending', 'in_progress', 'resolved', 'closed'] }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Advice updated' } }
+      },
+      delete: {
+        tags: ['Agronomists'],
+        summary: 'Delete advice',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Advice deleted' } }
+      }
+    },
+    '/api/agronomists/questions': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get all questions (Agronomist view)',
+        description: 'Agronomists can see all pending questions from farmers.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['pending', 'answered', 'closed'] } },
+          { name: 'category', in: 'query', schema: { type: 'string' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Questions retrieved' } }
+      }
+    },
+    '/api/agronomists/questions/{id}/answer': {
+      patch: {
+        tags: ['Agronomists'],
+        summary: 'Answer a question',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['answer'],
+                properties: {
+                  answer: { type: 'string', example: 'For maize cultivation, use NPK fertilizer at planting time...' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Question answered' } }
+      }
+    },
+    '/api/agronomists/training-materials': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get training materials',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'category', in: 'query', schema: { type: 'string' } },
+          { name: 'language', in: 'query', schema: { type: 'string', example: 'en' } },
+          { name: 'isPublished', in: 'query', schema: { type: 'boolean' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Training materials retrieved' } }
+      },
+      post: {
+        tags: ['Agronomists'],
+        summary: 'Create training material',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['title', 'description', 'category'],
+                properties: {
+                  title: { type: 'string', example: 'Introduction to Organic Farming' },
+                  description: { type: 'string' },
+                  content: { type: 'string' },
+                  videoUrl: { type: 'string', format: 'uri' },
+                  pdfUrl: { type: 'string', format: 'uri' },
+                  category: { type: 'string', example: 'Crop Management' },
+                  language: { type: 'string', default: 'en', example: 'en' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: 'Training material created' } }
+      }
+    },
+    '/api/agronomists/training-materials/{id}': {
+      get: {
+        tags: ['Agronomists'],
+        summary: 'Get training material by ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Training material retrieved' } }
+      },
+      patch: {
+        tags: ['Agronomists'],
+        summary: 'Update training material',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  description: { type: 'string' },
+                  content: { type: 'string' },
+                  videoUrl: { type: 'string', format: 'uri' },
+                  pdfUrl: { type: 'string', format: 'uri' },
+                  category: { type: 'string' },
+                  language: { type: 'string' },
+                  isPublished: { type: 'boolean' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 200: { description: 'Training material updated' } }
+      },
+      delete: {
+        tags: ['Agronomists'],
+        summary: 'Delete training material',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Training material deleted' } }
+      }
+    },
+    // Farmer Questions APIs
+    '/api/questions': {
+      get: {
+        tags: ['Questions'],
+        summary: 'Get my questions (Farmer)',
+        description: 'Farmers can see their own questions.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['pending', 'answered', 'closed'] } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+        ],
+        responses: { 200: { description: 'Questions retrieved' } }
+      },
+      post: {
+        tags: ['Questions'],
+        summary: 'Ask a question (Farmer)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['question'],
+                properties: {
+                  question: { type: 'string', example: 'What is the best fertilizer for maize?' },
+                  category: { type: 'string', example: 'Crop Management' }
+                }
+              }
+            }
+          }
+        },
+        responses: { 201: { description: 'Question submitted' } }
+      }
+    },
+    '/api/questions/{id}': {
+      get: {
+        tags: ['Questions'],
+        summary: 'Get question by ID',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Question retrieved' } }
       }
     },
   },

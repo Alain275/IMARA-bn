@@ -6,7 +6,8 @@ import {
   updateDiseaseDetection,
   deleteDiseaseDetection,
   getDiseaseStats,
-  detectDiseaseFromImage
+  detectDiseaseFromImage,
+  verifyDiseaseDetection
 } from '../controllers/disease.controller';
 import { authMiddleware } from '../middleware/auth';
 
@@ -20,6 +21,7 @@ router.get('/:id', getDiseaseById);
 router.post('/', createDiseaseDetection);
 router.post('/detect', detectDiseaseFromImage);
 router.patch('/:id', updateDiseaseDetection);
+router.patch('/:id/verify', verifyDiseaseDetection);
 router.delete('/:id', deleteDiseaseDetection);
 
 export default router;
