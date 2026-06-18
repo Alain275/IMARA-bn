@@ -13,6 +13,7 @@ import { initializeWebSocket } from './services/websocket';
 // Routes
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/user.routes';
+import farmRoutes from './routes/farm.routes';
 import cropRoutes from './routes/crop.routes';
 import weatherRoutes from './routes/weather.routes';
 import soilRoutes from './routes/soil.routes';
@@ -80,6 +81,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/farms', farmRoutes);
 app.use('/api/crops', cropRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/soil', soilRoutes);
