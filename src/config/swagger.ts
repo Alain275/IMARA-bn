@@ -1927,6 +1927,21 @@ export const swaggerDocument = {
         responses: { 200: { description: 'Question retrieved' } }
       }
     },
+    // Farm Management APIs
+    '/api/farms': {
+      post: {
+        tags: ['Farms'],
+        summary: 'Register a new farm',
+        security: [{ bearerAuth: [] }],
+        responses: { 201: { description: 'Farm registered successfully' } }
+      },
+      get: {
+        tags: ['Farms'],
+        summary: 'Get all user farms',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'Farms retrieved successfully' } }
+      }
+    },
   },
 };
 
