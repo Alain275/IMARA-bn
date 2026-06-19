@@ -35,7 +35,7 @@ app.use(helmet()); // Security headers
 // CORS Configuration - More permissive for production
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:5173'];
+  : ['http://localhost:5173', 'https://resilient-starship-55ff3d.netlify.app'];
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -48,8 +48,11 @@ app.use(cors({
     }
     
     // For development, log rejected origins
-    console.log('Rejected origin:', origin);
-    return callback(new Error('Not allowed by CORS'));
+    console.log('⚠️ CORS: Rejected origin:', origin);
+    console.log('✅ CORS: Allowed origins:', allowedOrigins);
+    
+    // Don't throw error, just don't allow
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
