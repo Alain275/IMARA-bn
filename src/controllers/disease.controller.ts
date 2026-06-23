@@ -252,8 +252,6 @@ export const getDiseaseStats = async (req: AuthRequest, res: Response, next: Nex
 // Detect disease from image (AI-powered)
 export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { cropId, farmId } = req.body;
-    
     // Validate role is farmer
     if (req.user?.role !== 'farmer') {
       return res.status(403).json({
@@ -275,8 +273,6 @@ export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, ne
     // Save detection to database with pending review status
     const detection = await DiseaseDetection.create({
       userId: req.user!.id,
-      farmId: (farmId && farmId.trim() !== '') ? farmId : undefined,
-      cropId: (cropId && cropId.trim() !== '') ? cropId : undefined,
       imageUrl: null, // Store null since we are using memory storage and not saving to disk
       
       aiDisease: aiResult.prediction.disease,
