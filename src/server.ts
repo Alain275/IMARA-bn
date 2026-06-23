@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import http from 'http';
+import axios from 'axios';
 import swaggerUi from 'swagger-ui-express';
 import { errorHandler } from './middleware/errorHandler';
 import { connectDatabase } from './config/database';
@@ -117,12 +118,34 @@ const startServer = async () => {
     // Initialize WebSocket
     initializeWebSocket(httpServer);
     
-    httpServer.listen(PORT, () => {
+    httpServer.listen(PORT, async () => {
       console.log(`🚀 IMARA Backend Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API available at http://localhost:${PORT}/api`);
       console.log(`📚 API Documentation at http://localhost:${PORT}/api-docs`);
       console.log(`🔌 WebSocket server running`);
+
+      // AI Service Health Check
+      const rawUrl = process.env.AI_SERVICE_URL || process.env.ML_API_URL || 'http://localhost:8000';
+      const AI_SERVICE_URL = rawUrl.replace(/\/$/, '');
+      const AI_SERVICE_ENABLED = process.env.AI_SERVICE_ENABLED !== 'false';
+      const AI_API_KEY = process.env.AI_SERVICE_API_KEY || process.env.ML_API_KEY;
+
+      console.log(`\n--- AI Service Configuration ---`);
+      console.log(`Enabled: ${AI_SERVICE_ENABLED}`);
+      console.log(`Target URL: ${AI_SERVICE_URL}`);
+      console.log(`API Key configured: ${!!AI_API_KEY ? 'Yes' : 'No'}`);
+      
+      if (AI_SERVICE_ENABLED) {
+        try {
+          await axios.get(`${AI_SERVICE_URL}/health`, { timeout: 10000 });
+          console.log(`✓ AI service reachable at ${AI_SERVICE_URL}/health`);
+        } catch (err: any) {
+          console.error(`✗ AI service unreachable! Failed to call ${AI_SERVICE_URL}/health`);
+          console.error(`  Reason: ${err.message}`);
+        }
+      }
+      console.log(`--------------------------------\n`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

@@ -295,6 +295,15 @@ export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, ne
       data: detection
     });
   } catch (error: any) {
+    if (error.name === 'AIServiceError') {
+      return res.status(error.status || 502).json({
+        success: false,
+        message: error.message,
+        details: error.details || undefined
+      });
+    }
+    
+    // Fallback for older error formats
     if (error.message && error.message.includes('AI Service')) {
       return res.status(502).json({
         success: false,
