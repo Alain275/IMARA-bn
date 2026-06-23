@@ -275,8 +275,8 @@ export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, ne
     // Save detection to database with pending review status
     const detection = await DiseaseDetection.create({
       userId: req.user!.id,
-      farmId: farmId || null,
-      cropId: cropId || null,
+      farmId: (farmId && farmId.trim() !== '') ? farmId : undefined,
+      cropId: (cropId && cropId.trim() !== '') ? cropId : undefined,
       imageUrl: null, // Store null since we are using memory storage and not saving to disk
       
       aiDisease: aiResult.prediction.disease,
