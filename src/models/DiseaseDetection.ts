@@ -4,43 +4,61 @@ import sequelize from '../config/database';
 interface DiseaseDetectionAttributes {
   id: string;
   userId: string;
+  farmId?: string;
   cropId?: string;
-  diseaseName: string;
-  confidence: number;
-  severity: 'low' | 'medium' | 'high';
   imageUrl?: string;
+  
+  // AI fields
+  aiDisease: string;
+  aiCrop: string;
+  aiConfidence: number;
+  aiModel: string;
+  aiMode: string;
+  demoMode: boolean;
+  
+  // Details
   symptoms?: string;
   treatment?: string;
   prevention?: string;
-  detectedAt: Date;
-  aiPrediction?: string;
-  aiConfidence?: number;
+  
+  // Verification
+  status: 'pending_review' | 'verified' | 'rejected';
+  verifiedDisease?: string;
+  verifiedTreatment?: string;
+  agronomistComment?: string;
   verifiedBy?: string;
-  verificationStatus: 'pending_review' | 'verified' | 'corrected';
-  verificationNotes?: string;
+  verifiedAt?: Date;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface DiseaseDetectionCreationAttributes extends Optional<DiseaseDetectionAttributes, 'id' | 'detectedAt'> {}
+interface DiseaseDetectionCreationAttributes extends Optional<DiseaseDetectionAttributes, 'id' | 'status'> {}
 
 class DiseaseDetection extends Model<DiseaseDetectionAttributes, DiseaseDetectionCreationAttributes> implements DiseaseDetectionAttributes {
   public id!: string;
   public userId!: string;
+  public farmId?: string;
   public cropId?: string;
-  public diseaseName!: string;
-  public confidence!: number;
-  public severity!: 'low' | 'medium' | 'high';
   public imageUrl?: string;
+  
+  public aiDisease!: string;
+  public aiCrop!: string;
+  public aiConfidence!: number;
+  public aiModel!: string;
+  public aiMode!: string;
+  public demoMode!: boolean;
+
   public symptoms?: string;
   public treatment?: string;
   public prevention?: string;
-  public detectedAt!: Date;
-  public aiPrediction?: string;
-  public aiConfidence?: number;
+
+  public status!: 'pending_review' | 'verified' | 'rejected';
+  public verifiedDisease?: string;
+  public verifiedTreatment?: string;
+  public agronomistComment?: string;
   public verifiedBy?: string;
-  public verificationStatus!: 'pending_review' | 'verified' | 'corrected';
-  public verificationNotes?: string;
+  public verifiedAt?: Date;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -61,6 +79,14 @@ DiseaseDetection.init(
         key: 'id',
       },
     },
+    farmId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'farms',
+        key: 'id',
+      },
+    },
     cropId: {
       type: DataTypes.UUID,
       allowNull: true,
@@ -69,26 +95,41 @@ DiseaseDetection.init(
         key: 'id',
       },
     },
-    diseaseName: {
+    imageUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    aiDisease: {
       type: DataTypes.STRING,
       allowNull: false,
+      comment: 'Original AI model prediction',
     },
-    confidence: {
+    aiCrop: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      comment: 'Crop predicted by AI',
+    },
+    aiConfidence: {
       type: DataTypes.FLOAT,
       allowNull: false,
       validate: {
         min: 0,
         max: 100,
       },
-      comment: 'Confidence level (0-100%)',
+      comment: 'AI prediction confidence (0-100%)',
     },
-    severity: {
-      type: DataTypes.ENUM('low', 'medium', 'high'),
+    aiModel: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
-    imageUrl: {
+    aiMode: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
+    },
+    demoMode: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     symptoms: {
       type: DataTypes.TEXT,
@@ -102,24 +143,23 @@ DiseaseDetection.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    detectedAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+    status: {
+      type: DataTypes.ENUM('pending_review', 'verified', 'rejected'),
+      defaultValue: 'pending_review',
       allowNull: false,
     },
-    aiPrediction: {
+    verifiedDisease: {
       type: DataTypes.STRING,
       allowNull: true,
-      comment: 'Original AI model prediction',
     },
-    aiConfidence: {
-      type: DataTypes.FLOAT,
+    verifiedTreatment: {
+      type: DataTypes.TEXT,
       allowNull: true,
-      validate: {
-        min: 0,
-        max: 100,
-      },
-      comment: 'AI prediction confidence (0-100%)',
+    },
+    agronomistComment: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Agronomist notes on verification',
     },
     verifiedBy: {
       type: DataTypes.UUID,
@@ -130,15 +170,9 @@ DiseaseDetection.init(
       },
       comment: 'Agronomist who verified the detection',
     },
-    verificationStatus: {
-      type: DataTypes.ENUM('pending_review', 'verified', 'corrected'),
-      defaultValue: 'pending_review',
-      allowNull: false,
-    },
-    verificationNotes: {
-      type: DataTypes.TEXT,
+    verifiedAt: {
+      type: DataTypes.DATE,
       allowNull: true,
-      comment: 'Agronomist notes on verification',
     },
   },
   {

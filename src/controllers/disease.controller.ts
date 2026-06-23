@@ -5,7 +5,7 @@ import Crop from '../models/Crop';
 import User from '../models/User';
 import sequelize from '../config/database';
 import { Op } from 'sequelize';
-import { detectDiseaseWithAI } from '../services/aiService';
+import { detectDiseaseWithAI } from '../services/aiDisease.service';
 
 // Get user's disease detections
 export const getDiseaseDetections = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -13,6 +13,7 @@ export const getDiseaseDetections = async (req: AuthRequest, res: Response, next
     const { severity, cropId, page = 1, limit = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
+    // Only farmers getting their own detections
     const where: any = { userId: req.user!.id };
     if (severity) where.severity = severity;
     if (cropId) where.cropId = cropId;
@@ -22,7 +23,45 @@ export const getDiseaseDetections = async (req: AuthRequest, res: Response, next
       include: [{ model: Crop, as: 'crop' }],
       limit: Number(limit),
       offset,
-      order: [['detectedAt', 'DESC']]
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: {
+        detections,
+        pagination: {
+          total: count,
+          page: Number(page),
+          limit: Number(limit),
+          pages: Math.ceil(count / Number(limit))
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get pending disease detections for agronomist
+export const getPendingDetections = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (req.user?.role !== 'agronomist' && req.user?.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only agronomists or admins can view pending detections.'
+      });
+    }
+
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+
+    const { rows: detections, count } = await DiseaseDetection.findAndCountAll({
+      where: { status: 'pending_review' },
+      include: [{ model: Crop, as: 'crop' }],
+      limit: Number(limit),
+      offset,
+      order: [['createdAt', 'ASC']]
     });
 
     res.json({
@@ -47,8 +86,15 @@ export const getDiseaseById = async (req: AuthRequest, res: Response, next: Next
   try {
     const { id } = req.params;
 
+    const whereClause: any = { id };
+    
+    // Only restrict to user's own if they are a farmer
+    if (req.user?.role === 'farmer') {
+      whereClause.userId = req.user.id;
+    }
+
     const detection = await DiseaseDetection.findOne({
-      where: { id, userId: req.user!.id },
+      where: whereClause,
       include: [{ model: Crop, as: 'crop' }]
     });
 
@@ -206,78 +252,59 @@ export const getDiseaseStats = async (req: AuthRequest, res: Response, next: Nex
 // Detect disease from image (AI-powered)
 export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { imageUrl, cropId } = req.body;
+    const { cropId, farmId } = req.body;
+    
+    // Validate role is farmer
+    if (req.user?.role !== 'farmer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only farmers can submit disease detection requests.'
+      });
+    }
 
-    if (!imageUrl) {
+    if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Image URL is required'
+        message: 'An image file is required.'
       });
     }
 
-    try {
-      // Call AI service for detection
-      const aiResult = await detectDiseaseWithAI(imageUrl);
+    // Call AI service for detection
+    const aiResult = await detectDiseaseWithAI(req.file.buffer, req.file.originalname);
 
-      // Determine severity based on confidence
-      let severity: 'low' | 'medium' | 'high' = 'medium';
-      if (aiResult.prediction.confidence >= 80) {
-        severity = 'high';
-      } else if (aiResult.prediction.confidence < 60) {
-        severity = 'low';
-      }
-
-      // Save detection to database with pending review status
-      const detection = await DiseaseDetection.create({
-        userId: req.user!.id,
-        cropId,
-        diseaseName: aiResult.prediction.disease,
-        confidence: aiResult.prediction.confidence,
-        severity,
-        imageUrl,
-        symptoms: aiResult.details.symptoms,
-        treatment: aiResult.details.treatment,
-        prevention: aiResult.details.prevention,
-        aiPrediction: aiResult.prediction.disease,
-        aiConfidence: aiResult.prediction.confidence,
-        verificationStatus: 'pending_review',
-        detectedAt: new Date()
-      });
-
-      res.json({
-        success: true,
-        message: '⚠️ AI Detection Complete - Awaiting Agronomist Verification',
-        data: {
-          detection,
-          aiResult: {
-            ...aiResult,
-            warning: 'This is an AI prediction. Please wait for agronomist verification before taking action.'
-          }
-        }
-      });
-    } catch (aiError: any) {
-      console.error('AI Service Error:', aiError);
+    // Save detection to database with pending review status
+    const detection = await DiseaseDetection.create({
+      userId: req.user!.id,
+      farmId: farmId || null,
+      cropId: cropId || null,
+      imageUrl: null, // Store null since we are using memory storage and not saving to disk
       
-      // Fallback: Save as unverified detection
-      const detection = await DiseaseDetection.create({
-        userId: req.user!.id,
-        cropId,
-        diseaseName: 'Unknown - AI Service Unavailable',
-        confidence: 0,
-        severity: 'medium',
-        imageUrl,
-        verificationStatus: 'pending_review',
-        detectedAt: new Date()
-      });
+      aiDisease: aiResult.prediction.disease,
+      aiCrop: aiResult.prediction.crop,
+      aiConfidence: aiResult.prediction.confidence,
+      aiModel: aiResult.metadata.model,
+      aiMode: aiResult.metadata.mode,
+      demoMode: aiResult.metadata.demo_mode,
+      
+      symptoms: aiResult.details.symptoms,
+      treatment: aiResult.details.treatment,
+      prevention: aiResult.details.prevention,
+      
+      status: 'pending_review'
+    });
 
-      res.json({
-        success: true,
-        message: 'Image uploaded. AI service unavailable - Agronomist review required.',
-        data: { detection },
-        warning: 'AI detection failed. An agronomist will review your submission.'
+    res.status(201).json({
+      success: true,
+      message: 'AI diagnosis completed. Awaiting agronomist verification.',
+      data: detection
+    });
+  } catch (error: any) {
+    if (error.message && error.message.includes('AI Service')) {
+      return res.status(502).json({
+        success: false,
+        message: error.message
       });
     }
-  } catch (error) {
     next(error);
   }
 };
@@ -286,7 +313,15 @@ export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, ne
 export const verifyDiseaseDetection = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { diseaseName, severity, treatment, prevention, verificationNotes, isCorrect } = req.body;
+    const { status, verifiedDisease, verifiedTreatment, agronomistComment } = req.body;
+
+    // Validate role is agronomist or admin
+    if (req.user?.role !== 'agronomist' && req.user?.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only agronomists or admins can verify disease detections.'
+      });
+    }
 
     const detection = await DiseaseDetection.findByPk(id);
 
@@ -296,22 +331,18 @@ export const verifyDiseaseDetection = async (req: AuthRequest, res: Response, ne
 
     // Update with agronomist verification
     detection.verifiedBy = req.user!.id;
-    detection.verificationStatus = isCorrect ? 'verified' : 'corrected';
-    detection.verificationNotes = verificationNotes;
-
-    if (!isCorrect) {
-      // Agronomist corrected the AI prediction
-      if (diseaseName) detection.diseaseName = diseaseName;
-      if (severity) detection.severity = severity;
-      if (treatment) detection.treatment = treatment;
-      if (prevention) detection.prevention = prevention;
-    }
+    detection.verifiedAt = new Date();
+    
+    if (status) detection.status = status;
+    if (verifiedDisease) detection.verifiedDisease = verifiedDisease;
+    if (verifiedTreatment) detection.verifiedTreatment = verifiedTreatment;
+    if (agronomistComment) detection.agronomistComment = agronomistComment;
 
     await detection.save();
 
     res.json({
       success: true,
-      message: isCorrect ? 'AI prediction verified' : 'Detection corrected by agronomist',
+      message: 'Disease detection verification updated successfully.',
       data: detection
     });
   } catch (error) {
