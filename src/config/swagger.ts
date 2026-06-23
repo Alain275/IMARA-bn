@@ -1979,9 +1979,7 @@ export const swaggerDocument = {
                 type: 'object',
                 required: ['file'],
                 properties: {
-                  file: { type: 'string', format: 'binary', description: 'Plant image' },
-                  farmId: { type: 'string', format: 'uuid' },
-                  cropId: { type: 'string', format: 'uuid' }
+                  file: { type: 'string', format: 'binary', description: 'Plant image' }
                 }
               }
             }
