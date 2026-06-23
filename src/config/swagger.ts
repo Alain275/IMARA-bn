@@ -181,15 +181,68 @@ export const swaggerDocument = {
                 type: 'object',
                 required: ['name', 'email', 'password', 'role'],
                 properties: {
-                  name: { type: 'string', example: 'John Doe' },
-                  email: { type: 'string', format: 'email', example: 'john@example.com' },
-                  password: { type: 'string', format: 'password', example: 'StrongPass123!' },
-                  phone: { type: 'string', example: '+250788000000' },
-                  role: { type: 'string', enum: ['farmer', 'agronomist', 'admin', 'cooperative'], example: 'farmer' },
-                  location: { type: 'string', example: 'Kigali, Rwanda' },
-                  farmSize: { type: 'number', example: 2.5 },
+                  name: { type: 'string' },
+                  email: { type: 'string', format: 'email' },
+                  password: { type: 'string', format: 'password' },
+                  phone: { type: 'string' },
+                  role: { type: 'string', enum: ['farmer', 'agronomist', 'admin', 'cooperative'] },
+                  location: { type: 'string' },
+                  farmSize: { type: 'number' },
+                  specialization: { type: 'string' },
+                  certificationNumber: { type: 'string' },
+                  registrationNumber: { type: 'string' },
                 },
               },
+              examples: {
+                farmer: {
+                  summary: 'Farmer',
+                  value: {
+                    name: 'John Doe',
+                    email: 'farmer@example.com',
+                    password: 'StrongPass123!',
+                    phone: '+250788000000',
+                    role: 'farmer',
+                    location: 'Kigali, Rwanda',
+                    farmSize: 2.5
+                  }
+                },
+                agronomist: {
+                  summary: 'Agronomist',
+                  value: {
+                    name: 'Dr. Jane Smith',
+                    email: 'agronomist@example.com',
+                    password: 'StrongPass123!',
+                    phone: '+250788000001',
+                    role: 'agronomist',
+                    location: 'Musanze, Rwanda',
+                    specialization: 'Crop Protection',
+                    certificationNumber: 'AGR-2026-445'
+                  }
+                },
+                cooperative: {
+                  summary: 'Cooperative',
+                  value: {
+                    name: 'Kigali Farmers Co-op',
+                    email: 'coop@example.com',
+                    password: 'StrongPass123!',
+                    phone: '+250788000002',
+                    role: 'cooperative',
+                    location: 'Kigali, Rwanda',
+                    registrationNumber: 'COOP-RCA-998'
+                  }
+                },
+                admin: {
+                  summary: 'Admin (For Testing)',
+                  value: {
+                    name: 'System Admin',
+                    email: 'admin@imara.rw',
+                    password: 'StrongPass123!',
+                    phone: '+250788000003',
+                    role: 'admin',
+                    location: 'Kigali, Rwanda'
+                  }
+                }
+              }
             },
           },
         },
