@@ -6,11 +6,11 @@ import {
   getFarmingAlerts,
   getRainfallHistory
 } from '../controllers/weather.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(protectRoute);
 
 router.get('/current', getCurrentWeather);
 router.get('/hourly', getHourlyForecast);

@@ -322,8 +322,17 @@ export const getFarmerStats = async (req: AuthRequest, res: Response, next: Next
   try {
     const farmerId = req.params.id || req.user!.id;
 
+    // Farmers may only view their own stats; admin and agronomist may view any
+    if (
+      req.user!.role === UserRole.FARMER &&
+      req.params.id &&
+      req.params.id !== req.user!.id
+    ) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
     const farmer = await User.findByPk(farmerId);
-    
+
     if (!farmer || farmer.role !== UserRole.FARMER) {
       return res.status(404).json({ success: false, message: 'Farmer not found' });
     }

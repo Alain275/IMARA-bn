@@ -21,11 +21,14 @@ import {
   updateTrainingMaterial,
   deleteTrainingMaterial
 } from '../controllers/agronomist.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
+import { restrictTo } from '../middleware/restrictTo';
+import { UserRole } from '../models/User';
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(protectRoute);
+router.use(restrictTo(UserRole.AGRONOMIST, UserRole.ADMIN));
 
 // Profile
 router.get('/profile', getAgronomistProfile);

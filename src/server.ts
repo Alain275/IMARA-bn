@@ -52,8 +52,9 @@ app.use(cors({
     console.log('⚠️ CORS: Rejected origin:', origin);
     console.log('✅ CORS: Allowed origins:', allowedOrigins);
     
-    // Don't throw error, just don't allow
-    return callback(null, false);
+    // Pass an error so Express's error handler (not the 404 handler) responds,
+    // keeping CORS headers present on the error response for the allowed origin.
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
