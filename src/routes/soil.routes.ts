@@ -8,11 +8,11 @@ import {
   deleteSoilTest,
   getSoilAnalysis
 } from '../controllers/soil.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(protectRoute);
 
 router.get('/', getSoilTests);
 router.get('/latest', getLatestSoilTest);

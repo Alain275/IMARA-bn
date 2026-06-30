@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { AppError } from '../utils/AppError';
 import { AuthRequest } from '../middleware/auth';
 import { User } from '../models';
+import { UserRole } from '../models/User';
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -22,14 +23,14 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       phone,
       location,
       farmSize,
-      role: 'farmer'
+      role: UserRole.FARMER
     });
 
     // Generate token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'] }
     );
 
     res.status(201).json({
@@ -73,7 +74,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'] }
     );
 
     res.json({

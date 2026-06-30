@@ -9,11 +9,13 @@ import {
   updateMarketPrice,
   deleteMarketPrice
 } from '../controllers/market.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
+import { restrictTo } from '../middleware/restrictTo';
+import { UserRole } from '../models/User';
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(protectRoute);
 
 router.get('/prices', getMarketPrices);
 router.get('/prices/:id', getPriceById);
@@ -21,9 +23,9 @@ router.get('/trends', getPriceTrends);
 router.get('/summary', getMarketSummary);
 router.get('/alerts', getPriceAlerts);
 
-// Admin routes (add role check middleware if needed)
-router.post('/prices', addMarketPrice);
-router.patch('/prices/:id', updateMarketPrice);
-router.delete('/prices/:id', deleteMarketPrice);
+// Admin-only data entry
+router.post('/prices', restrictTo(UserRole.ADMIN), addMarketPrice);
+router.patch('/prices/:id', restrictTo(UserRole.ADMIN), updateMarketPrice);
+router.delete('/prices/:id', restrictTo(UserRole.ADMIN), deleteMarketPrice);
 
 export default router;

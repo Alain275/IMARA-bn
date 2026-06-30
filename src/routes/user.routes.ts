@@ -14,12 +14,14 @@ import {
   getAllFarmers,
   getFarmerStats
 } from '../controllers/user.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
+import { restrictTo } from '../middleware/restrictTo';
+import { UserRole } from '../models/User';
 
 const router = Router();
 
-// All routes require authentication
-router.use(authMiddleware);
+// All routes require authentication + live user check
+router.use(protectRoute);
 
 // Profile Routes
 router.get('/profile', getProfile);
@@ -34,8 +36,8 @@ router.patch('/:id', updateUser);
 router.delete('/:id', deleteUser);
 
 // Farmers Routes
-router.get('/farmers/all', getAllFarmers);
-router.get('/farmers/:id/stats', getFarmerStats);
-router.get('/farmers/stats', getFarmerStats); // Current farmer stats
+router.get('/farmers/all', restrictTo(UserRole.ADMIN, UserRole.AGRONOMIST), getAllFarmers);
+router.get('/farmers/stats', getFarmerStats); // own stats — any authenticated user
+router.get('/farmers/:id/stats', restrictTo(UserRole.ADMIN, UserRole.AGRONOMIST, UserRole.FARMER), getFarmerStats);
 
 export default router;

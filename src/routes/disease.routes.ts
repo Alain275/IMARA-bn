@@ -11,7 +11,7 @@ import {
   detectDiseaseFromImage,
   verifyDiseaseDetection
 } from '../controllers/disease.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
 
 const router = Router();
 
@@ -28,7 +28,7 @@ const upload = multer({
   }
 });
 
-router.use(authMiddleware);
+router.use(protectRoute);
 
 // Map root and /my-detections to the same controller method
 router.get('/', getDiseaseDetections);

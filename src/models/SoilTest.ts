@@ -19,21 +19,24 @@ interface SoilTestAttributes {
 
 interface SoilTestCreationAttributes extends Optional<SoilTestAttributes, 'id' | 'testDate'> {}
 
+// `declare` instead of `!` prevents ES2022 class-field initializers from
+// shadowing Sequelize's prototype getters (which would make all reads return
+// undefined when the controller accesses instance.ph directly).
 class SoilTest extends Model<SoilTestAttributes, SoilTestCreationAttributes> implements SoilTestAttributes {
-  public id!: string;
-  public userId!: string;
-  public ph!: number;
-  public nitrogen!: number;
-  public phosphorus!: number;
-  public potassium!: number;
-  public organicMatter?: number;
-  public texture?: string;
-  public location?: string;
-  public notes?: string;
-  public testDate!: Date;
+  declare public id: string;
+  declare public userId: string;
+  declare public ph: number;
+  declare public nitrogen: number;
+  declare public phosphorus: number;
+  declare public potassium: number;
+  declare public organicMatter: number | undefined;
+  declare public texture: string | undefined;
+  declare public location: string | undefined;
+  declare public notes: string | undefined;
+  declare public testDate: Date;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare public readonly createdAt: Date;
+  declare public readonly updatedAt: Date;
 }
 
 SoilTest.init(

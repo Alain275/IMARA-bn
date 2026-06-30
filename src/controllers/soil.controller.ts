@@ -198,14 +198,24 @@ export const getSoilAnalysis = async (req: AuthRequest, res: Response, next: Nex
       return res.status(404).json({ success: false, message: 'No soil test found' });
     }
 
-    // Calculate health score
+    // Scoring thresholds (heuristic engineering defaults — must be reviewed by
+    // a certified agronomist familiar with Rwanda's soil conditions before use
+    // in clinical or commercial advisory contexts).
+    //
+    // pH:  optimal 6.0–7.5; −20 pts per unit outside that range, floor 0
+    // N:   optimal ≥ 50 mg/kg (urea-based intensive cropping reference)
+    // P:   optimal ≥ 40 mg/kg (DAP application threshold)
+    // K:   optimal ≥ 60 mg/kg (East Africa maize/bean reference)
+    // OM:  optimal ≥ 5 % (high organic matter; 3 % is considered adequate)
     const phScore = test.ph >= 6.0 && test.ph <= 7.5 ? 100 : Math.max(0, 100 - Math.abs(6.5 - test.ph) * 20);
     const nScore = Math.min(100, (test.nitrogen / 50) * 100);
     const pScore = Math.min(100, (test.phosphorus / 40) * 100);
     const kScore = Math.min(100, (test.potassium / 60) * 100);
-    const omScore = test.organicMatter ? Math.min(100, (test.organicMatter / 5) * 100) : 50;
-    
+    const omScore = test.organicMatter != null ? Math.min(100, (test.organicMatter / 5) * 100) : 50;
+
     const healthScore = Math.round((phScore + nScore + pScore + kScore + omScore) / 5);
+
+    const scoreStatus = (s: number) => (s > 75 ? 'good' : s > 50 ? 'fair' : 'poor');
 
     // Generate recommendations
     const recommendations = [];
@@ -260,15 +270,21 @@ export const getSoilAnalysis = async (req: AuthRequest, res: Response, next: Nex
       });
     }
 
-    // Crop suitability
-    const cropSuitability = [
-      { crop: 'Maize', suitability: Math.min(100, healthScore + 10), status: 'excellent' },
-      { crop: 'Beans', suitability: Math.min(100, healthScore + 5), status: 'excellent' },
-      { crop: 'Irish Potatoes', suitability: Math.max(50, healthScore - 5), status: 'good' },
-      { crop: 'Tomatoes', suitability: Math.max(50, healthScore - 10), status: 'good' },
-      { crop: 'Rice', suitability: Math.max(30, healthScore - 30), status: 'fair' },
-      { crop: 'Wheat', suitability: Math.max(20, healthScore - 40), status: 'fair' }
+    // Crop suitability scores are relative to overall soil health.
+    // Status is derived from the computed score, not hardcoded.
+    const cropSuitabilityRaw = [
+      { crop: 'Maize',          score: Math.min(100, healthScore + 10) },
+      { crop: 'Beans',          score: Math.min(100, healthScore + 5)  },
+      { crop: 'Irish Potatoes', score: Math.max(0,   healthScore - 5)  },
+      { crop: 'Tomatoes',       score: Math.max(0,   healthScore - 10) },
+      { crop: 'Rice',           score: Math.max(0,   healthScore - 30) },
+      { crop: 'Wheat',          score: Math.max(0,   healthScore - 40) },
     ];
+    const cropSuitability = cropSuitabilityRaw.map(({ crop, score }) => ({
+      crop,
+      suitability: score,
+      status: score > 75 ? 'excellent' : score > 50 ? 'good' : score > 25 ? 'fair' : 'poor',
+    }));
 
     res.json({
       success: true,
@@ -278,13 +294,13 @@ export const getSoilAnalysis = async (req: AuthRequest, res: Response, next: Nex
         recommendations,
         cropSuitability,
         nutrientProfile: {
-          ph: { value: test.ph, score: Math.round(phScore), status: phScore > 75 ? 'good' : phScore > 50 ? 'fair' : 'poor' },
-          nitrogen: { value: test.nitrogen, score: Math.round(nScore), status: nScore > 75 ? 'good' : nScore > 50 ? 'fair' : 'poor' },
-          phosphorus: { value: test.phosphorus, score: Math.round(pScore), status: pScore > 75 ? 'good' : pScore > 50 ? 'fair' : 'poor' },
-          potassium: { value: test.potassium, score: Math.round(kScore), status: kScore > 75 ? 'good' : kScore > 50 ? 'fair' : 'poor' },
-          organicMatter: { value: test.organicMatter || 0, score: Math.round(omScore), status: omScore > 75 ? 'good' : omScore > 50 ? 'fair' : 'poor' }
-        }
-      }
+          ph:           { value: test.ph,                    score: Math.round(phScore), status: scoreStatus(phScore) },
+          nitrogen:     { value: test.nitrogen,              score: Math.round(nScore),  status: scoreStatus(nScore)  },
+          phosphorus:   { value: test.phosphorus,            score: Math.round(pScore),  status: scoreStatus(pScore)  },
+          potassium:    { value: test.potassium,             score: Math.round(kScore),  status: scoreStatus(kScore)  },
+          organicMatter:{ value: test.organicMatter ?? null, score: Math.round(omScore), status: scoreStatus(omScore) },
+        },
+      },
     });
   } catch (error) {
     next(error);
