@@ -7,6 +7,7 @@ import crypto from 'crypto';
 // User roles enum
 export enum UserRole {
   FARMER = 'farmer',
+  AGRO_DEALER = 'agro-dealer',
   AGRONOMIST = 'agronomist',
   ADMIN = 'admin',
   COOPERATIVE = 'cooperative'

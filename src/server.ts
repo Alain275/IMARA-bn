@@ -23,6 +23,7 @@ import marketRoutes from './routes/market.routes';
 import notificationRoutes from './routes/notification.routes';
 import agronomistRoutes from './routes/agronomist.routes';
 import questionRoutes from './routes/question.routes';
+import chatRoutes from './routes/chat.routes';
 
 // Load environment variables
 dotenv.config();
@@ -94,6 +95,7 @@ app.use('/api/market', marketRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/agronomists', agronomistRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 404 handler
 app.all('*', (req, res) => {
