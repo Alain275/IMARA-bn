@@ -49,7 +49,7 @@ export const swaggerDocument = {
           phone: { type: 'string' },
           role: {
             type: 'string',
-            enum: ['farmer', 'agronomist', 'admin', 'cooperative'],
+            enum: ['farmer', 'agro-dealer', 'agronomist', 'admin', 'cooperative'],
           },
           location: { type: 'string' },
           farmSize: { type: 'number' },
@@ -185,7 +185,7 @@ export const swaggerDocument = {
                   email: { type: 'string', format: 'email' },
                   password: { type: 'string', format: 'password' },
                   phone: { type: 'string' },
-                  role: { type: 'string', enum: ['farmer', 'agronomist', 'admin', 'cooperative'] },
+                  role: { type: 'string', enum: ['farmer', 'agro-dealer', 'agronomist', 'admin', 'cooperative'] },
                   location: { type: 'string' },
                   farmSize: { type: 'number' },
                   specialization: { type: 'string' },
@@ -204,6 +204,17 @@ export const swaggerDocument = {
                     role: 'farmer',
                     location: 'Kigali, Rwanda',
                     farmSize: 2.5
+                  }
+                },
+                agroDealer: {
+                  summary: 'Agro-Dealer',
+                  value: {
+                    name: 'Green Harvest Inputs',
+                    email: 'dealer@example.com',
+                    password: 'StrongPass123!',
+                    phone: '+250788000010',
+                    role: 'agro-dealer',
+                    location: 'Kigali, Rwanda'
                   }
                 },
                 agronomist: {
@@ -718,7 +729,7 @@ export const swaggerDocument = {
           {
             name: 'role',
             in: 'query',
-            schema: { type: 'string', enum: ['farmer', 'agronomist', 'admin', 'cooperative'] },
+            schema: { type: 'string', enum: ['farmer', 'agro-dealer', 'agronomist', 'admin', 'cooperative'] },
             description: 'Filter by user role',
           },
           {
@@ -843,7 +854,7 @@ export const swaggerDocument = {
                   phone: { type: 'string' },
                   location: { type: 'string' },
                   farmSize: { type: 'number' },
-                  role: { type: 'string', enum: ['farmer', 'agronomist', 'admin', 'cooperative'] },
+                  role: { type: 'string', enum: ['farmer', 'agro-dealer', 'agronomist', 'admin', 'cooperative'] },
                   isActive: { type: 'boolean' },
                   isEmailVerified: { type: 'boolean' },
                 },

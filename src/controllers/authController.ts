@@ -42,7 +42,7 @@ interface AuthRequest extends Request {
  *                 type: string
  *               role:
  *                 type: string
- *                 enum: [farmer, agronomist, admin, cooperative]
+ *                 enum: [farmer, agro-dealer, agronomist, admin, cooperative]
  *               location:
  *                 type: string
  *               farmSize:
