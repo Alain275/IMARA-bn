@@ -6,6 +6,31 @@ import User from '../models/User';
 import sequelize from '../config/database';
 import { Op } from 'sequelize';
 import { detectDiseaseWithAI } from '../services/aiDisease.service';
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Confidence below this value is flagged as low-confidence in the response.
+// Tune via AI_CONFIDENCE_THRESHOLD env var (0–100, default 50).
+const LOW_CONFIDENCE_THRESHOLD = Number(process.env.AI_CONFIDENCE_THRESHOLD ?? '50');
+
+function uploadToCloudinary(buffer: Buffer, filename: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const folder = 'disease-detections';
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: 'image', public_id: filename.replace(/\.[^.]+$/, '') },
+      (error, result) => {
+        if (error || !result) return reject(error ?? new Error('Cloudinary upload returned no result'));
+        resolve(result.secure_url);
+      }
+    );
+    stream.end(buffer);
+  });
+}
 
 // Get user's disease detections
 export const getDiseaseDetections = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -132,14 +157,17 @@ export const createDiseaseDetection = async (req: AuthRequest, res: Response, ne
     const detection = await DiseaseDetection.create({
       userId: req.user!.id,
       cropId,
-      diseaseName,
-      confidence: confidence || 85,
-      severity,
       imageUrl,
+      aiDisease: diseaseName,  // model field is aiDisease
+      aiCrop: '',              // not applicable for manual entry
+      aiConfidence: confidence || 85,
+      aiModel: 'manual',
+      aiMode: 'manual',
+      demoMode: false,
       symptoms,
       treatment,
       prevention,
-      detectedAt: new Date()
+      status: 'pending_review'
     });
 
     res.status(201).json({
@@ -156,7 +184,7 @@ export const createDiseaseDetection = async (req: AuthRequest, res: Response, ne
 export const updateDiseaseDetection = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { severity, symptoms, treatment, prevention, notes } = req.body;
+    const { symptoms, treatment, prevention } = req.body;
 
     const detection = await DiseaseDetection.findOne({
       where: { id, userId: req.user!.id }
@@ -166,7 +194,6 @@ export const updateDiseaseDetection = async (req: AuthRequest, res: Response, ne
       return res.status(404).json({ success: false, message: 'Disease detection not found' });
     }
 
-    if (severity !== undefined) detection.severity = severity;
     if (symptoms !== undefined) detection.symptoms = symptoms;
     if (treatment !== undefined) detection.treatment = treatment;
     if (prevention !== undefined) detection.prevention = prevention;
@@ -214,34 +241,35 @@ export const getDiseaseStats = async (req: AuthRequest, res: Response, next: Nex
       where: { userId: req.user!.id }
     });
 
-    const bySeverity = await DiseaseDetection.findAll({
+    // Group by AI-predicted disease name (severity field was removed from the model)
+    const byDisease = await DiseaseDetection.findAll({
       where: { userId: req.user!.id },
       attributes: [
-        'severity',
+        'aiDisease',
         [sequelize.fn('COUNT', sequelize.col('id')), 'count']
       ],
-      group: ['severity'],
+      group: ['aiDisease'],
       raw: true
     });
 
     const recent = await DiseaseDetection.findAll({
       where: {
         userId: req.user!.id,
-        detectedAt: {
+        createdAt: {
           [Op.gte]: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
         }
       },
       limit: 5,
-      order: [['detectedAt', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
 
     res.json({
       success: true,
       data: {
         total,
-        bySeverity,
+        byDisease,
         recent,
-        lastDetection: recent.length > 0 ? recent[0].detectedAt : null
+        lastDetection: recent.length > 0 ? recent[0].createdAt : null
       }
     });
   } catch (error) {
@@ -270,29 +298,54 @@ export const detectDiseaseFromImage = async (req: AuthRequest, res: Response, ne
     // Call AI service for detection
     const aiResult = await detectDiseaseWithAI(req.file.buffer, req.file.originalname);
 
+    // Upload the image to Cloudinary so a permanent URL is stored with the record.
+    // If Cloudinary env vars are absent, imageUrl is left undefined rather than crashing.
+    let imageUrl: string | undefined;
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      try {
+        imageUrl = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+      } catch (uploadErr: any) {
+        console.error('[Cloudinary] Upload failed:', uploadErr.message);
+      }
+    }
+
+    const confidence = aiResult.prediction.confidence;
+    const lowConfidence = confidence < LOW_CONFIDENCE_THRESHOLD;
+
     // Save detection to database with pending review status
     const detection = await DiseaseDetection.create({
       userId: req.user!.id,
-      imageUrl: null, // Store null since we are using memory storage and not saving to disk
-      
-      aiDisease: aiResult.prediction.disease,
-      aiCrop: aiResult.prediction.crop,
-      aiConfidence: aiResult.prediction.confidence,
-      aiModel: aiResult.metadata.model,
-      aiMode: aiResult.metadata.mode,
-      demoMode: aiResult.metadata.demo_mode,
-      
-      symptoms: aiResult.details.symptoms,
+      imageUrl,
+
+      aiDisease:    aiResult.prediction.disease,
+      aiCrop:       aiResult.prediction.crop,
+      aiConfidence: confidence,
+      aiModel:      aiResult.metadata.model,
+      aiMode:       aiResult.metadata.mode,
+      demoMode:     aiResult.metadata.demo_mode,
+
+      // TODO: the Python AI service must be updated to return real per-disease
+      // symptoms, treatment, and prevention text (keyed to the predicted disease
+      // class). Until then, aiResult.details contains generic placeholder strings
+      // ("Consult with an agronomist…", "Maintain good agricultural practices").
+      // Do NOT replace these fields here — pass them through as-is so that when
+      // the Python service starts returning real content, nothing in this layer
+      // overwrites it.
+      symptoms:  aiResult.details.symptoms,
       treatment: aiResult.details.treatment,
       prevention: aiResult.details.prevention,
-      
-      status: 'pending_review'
+
+      status: 'pending_review',
     });
 
     res.status(201).json({
       success: true,
-      message: 'AI diagnosis completed. Awaiting agronomist verification.',
-      data: detection
+      message: lowConfidence
+        ? 'AI diagnosis completed (low confidence — agronomist review strongly recommended).'
+        : 'AI diagnosis completed. Awaiting agronomist verification.',
+      lowConfidence,
+      confidenceThreshold: LOW_CONFIDENCE_THRESHOLD,
+      data: detection,
     });
   } catch (error: any) {
     if (error.name === 'AIServiceError') {

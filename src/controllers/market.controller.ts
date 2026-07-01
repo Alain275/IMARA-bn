@@ -86,6 +86,7 @@ export const getPriceTrends = async (req: AuthRequest, res: Response, next: Next
 
     if (location) where.location = { [Op.iLike]: `%${location}%` };
 
+    // raw:true returns plain objects; cast to any[] so we can access aggregate aliases
     const trends = await MarketPrice.findAll({
       where,
       attributes: [
@@ -98,7 +99,7 @@ export const getPriceTrends = async (req: AuthRequest, res: Response, next: Next
       group: [sequelize.fn('DATE', sequelize.col('priceDate'))],
       order: [[sequelize.fn('DATE', sequelize.col('priceDate')), 'ASC']],
       raw: true
-    });
+    }) as unknown as Array<{ avgPrice: string; minPrice: string; maxPrice: string; totalVolume: string; date: string }>;
 
     // Calculate price change
     const priceChange = trends.length >= 2

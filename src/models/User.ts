@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
 
 // User roles enum
@@ -86,7 +86,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     return jwt.sign(
       { id: this.id, email: this.email, role: this.role },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'] }
     );
   }
 
@@ -97,7 +97,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     return jwt.sign(
       { id: this.id },
       process.env.JWT_REFRESH_SECRET!,
-      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
+      { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '30d') as SignOptions['expiresIn'] }
     );
   }
 
@@ -162,7 +162,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
    * Get public profile (without sensitive data)
    */
   public toJSON(): Partial<UserAttributes> {
-    const values = { ...this.get() };
+    const values: Partial<UserAttributes> = { ...this.get() };
     delete values.password;
     delete values.emailVerificationToken;
     delete values.passwordResetToken;

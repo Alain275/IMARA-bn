@@ -1406,25 +1406,24 @@ export const swaggerDocument = {
     '/api/disease/detect': {
       post: {
         tags: ['Disease'],
-        summary: 'Detect disease from image (AI)',
-        description: 'AI-powered disease detection from image (placeholder).',
+        summary: 'Detect disease from image — AI (Farmer only)',
+        description: 'Uploads a plant image to the AI service for disease detection.',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
-            'application/json': {
+            'multipart/form-data': {
               schema: {
                 type: 'object',
-                required: ['imageUrl'],
+                required: ['file'],
                 properties: {
-                  imageUrl: { type: 'string' },
-                  cropId: { type: 'string', format: 'uuid' }
+                  file: { type: 'string', format: 'binary', description: 'Plant image (jpg/png, max 10 MB)' }
                 }
               }
             }
           }
         },
-        responses: { 200: { description: 'Disease detected' } }
+        responses: { 201: { description: 'AI detection result saved, awaiting agronomist review' } }
       }
     },
     '/api/disease/{id}': {
@@ -1991,67 +1990,7 @@ export const swaggerDocument = {
         responses: { 200: { description: 'Question retrieved' } }
       }
     },
-    // Disease Detection APIs
-    '/api/disease': {
-      get: {
-        tags: ['Disease'],
-        summary: 'Get all disease detections',
-        security: [{ bearerAuth: [] }],
-        responses: { 200: { description: 'Detections retrieved' } }
-      },
-      post: {
-        tags: ['Disease'],
-        summary: 'Create manual disease detection',
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['diseaseName', 'severity'],
-                properties: {
-                  diseaseName: { type: 'string' },
-                  severity: { type: 'string', enum: ['low', 'medium', 'high'] },
-                  cropId: { type: 'string', format: 'uuid' }
-                }
-              }
-            }
-          }
-        },
-        responses: { 201: { description: 'Detection created' } }
-      }
-    },
-    '/api/disease/stats': {
-      get: {
-        tags: ['Disease'],
-        summary: 'Get disease statistics',
-        security: [{ bearerAuth: [] }],
-        responses: { 200: { description: 'Statistics retrieved' } }
-      }
-    },
-    '/api/disease/detect': {
-      post: {
-        tags: ['Disease'],
-        summary: 'Detect disease from image (Farmer)',
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            'multipart/form-data': {
-              schema: {
-                type: 'object',
-                required: ['file'],
-                properties: {
-                  file: { type: 'string', format: 'binary', description: 'Plant image' }
-                }
-              }
-            }
-          }
-        },
-        responses: { 201: { description: 'Disease detection started' } }
-      }
-    },
+    // Additional disease detection paths
     '/api/disease/my-detections': {
       get: {
         tags: ['Disease'],
@@ -2066,43 +2005,6 @@ export const swaggerDocument = {
         summary: 'Get pending disease detections (Agronomist/Admin)',
         security: [{ bearerAuth: [] }],
         responses: { 200: { description: 'Pending detections retrieved' } }
-      }
-    },
-    '/api/disease/{id}': {
-      get: {
-        tags: ['Disease'],
-        summary: 'Get disease detection by ID',
-        security: [{ bearerAuth: [] }],
-        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
-        responses: { 200: { description: 'Detection retrieved' } }
-      },
-      patch: {
-        tags: ['Disease'],
-        summary: 'Update disease detection',
-        security: [{ bearerAuth: [] }],
-        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
-        requestBody: {
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                properties: {
-                  severity: { type: 'string', enum: ['low', 'medium', 'high'] },
-                  symptoms: { type: 'string' },
-                  treatment: { type: 'string' }
-                }
-              }
-            }
-          }
-        },
-        responses: { 200: { description: 'Detection updated' } }
-      },
-      delete: {
-        tags: ['Disease'],
-        summary: 'Delete disease detection',
-        security: [{ bearerAuth: [] }],
-        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
-        responses: { 200: { description: 'Detection deleted' } }
       }
     },
     '/api/disease/{id}/verify': {

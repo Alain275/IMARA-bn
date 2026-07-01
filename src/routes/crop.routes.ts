@@ -8,7 +8,7 @@ import {
   updateFarmerCrop,
   deleteFarmerCrop
 } from '../controllers/crop.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
 
 const router = Router();
 
@@ -17,7 +17,7 @@ router.get('/catalog', getAllCrops);
 router.get('/catalog/:id', getCropById);
 
 // Protected routes
-router.use(authMiddleware);
+router.use(protectRoute);
 
 router.get('/recommendations', getCropRecommendations);
 router.get('/my-crops', getFarmerCrops);

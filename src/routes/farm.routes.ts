@@ -7,12 +7,12 @@ import {
   deleteFarm,
   getFarmStats
 } from '../controllers/farm.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
 
 const router = Router();
 
 // All routes require authentication
-router.use(authMiddleware);
+router.use(protectRoute);
 
 // Farm CRUD
 router.post('/', createFarm);

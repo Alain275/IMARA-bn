@@ -4,11 +4,11 @@ import {
   getMyQuestions,
   getQuestionById
 } from '../controllers/question.controller';
-import { authMiddleware } from '../middleware/auth';
+import { protectRoute } from '../middleware/protectRoute';
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(protectRoute);
 
 router.post('/', createQuestion);
 router.get('/', getMyQuestions);
